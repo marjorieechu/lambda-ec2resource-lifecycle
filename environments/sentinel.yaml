@@ -1,0 +1,23 @@
+tags:
+  owner: "sentinel Technology"
+  team: "sentinel Team"
+  environment: "development"
+  project: "sentinel"
+  create_by: "Terraform"
+  cloud_provider: "aws"
+  confidentiality: "internal"
+  costcenter: "dev-sentinel-eng"
+
+s3:
+  aws_region_main: "us-east-1"
+  aws_region_backup: "us-east-2"
+  force_destroy: false
+
+lambda_function:
+  aws_region_main: "us-east-1"
+  lambda_timeout_ec2: 300
+  lambda_timeout_logger: 120
+  cost_threshold: 10
+  micro_max_age_days: 4
+  default_max_age_days: 1
+  mattermost_webhook_url: https://mattermost.edusc.us/hooks/toehkp7b77fa3gn3czbnnu55xo
