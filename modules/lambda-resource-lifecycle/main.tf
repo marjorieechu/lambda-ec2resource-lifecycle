@@ -9,21 +9,20 @@ data "archive_file" "lambda_function_zip" {
 resource "aws_lambda_function" "ec2_lifecycle" {
   function_name = format("%s-%s-ec2-lifecycle-manager", var.tags["environment"], var.tags["project"])
   role          = aws_iam_role.lambda_role.arn
-  handler       = "lambda_function.ec2_lifecycle_handler"
+  handler       = "ec2_lifecycle.ec2_lifecycle_handler" 
   runtime       = "python3.9"
   filename      = data.archive_file.lambda_function_zip.output_path
-  timeout       = var.lambda_timeout_ec2
+  timeout       = var.ec2_lifecycle_config.lambda_timeout_ec2
 
   environment {
     variables = {
-      COST_THRESHOLD        = tostring(var.cost_threshold)
-      MICRO_MAX_AGE_DAYS    = tostring(var.micro_max_age_days)
-      DEFAULT_MAX_AGE_DAYS  = tostring(var.default_max_age_days)
-      MATTERMOST_WEBHOOK_URL = var.mattermost_webhook_url
+      COST_THRESHOLD        = tostring(var.ec2_lifecycle_config.cost_threshold)
+      MICRO_MAX_AGE_DAYS    = tostring(var.ec2_lifecycle_config.micro_max_age_days)
+      DEFAULT_MAX_AGE_DAYS  = tostring(var.ec2_lifecycle_config.default_max_age_days)
+      MATTERMOST_WEBHOOK_URL = var.ec2_lifecycle_config.mattermost_webhook_url
       REQUIRED_TAG_KEYS = format(
-        "env=%s, project=%s, owner=%s",
+        "env=%s, owner=%s",
         var.tags["environment"],
-        var.tags["project"],
         var.tags["owner"]
       )
 
@@ -41,10 +40,10 @@ resource "aws_cloudwatch_log_group" "ec2_lifecycle" {
 resource "aws_lambda_function" "resource_logger" {
   function_name = format("%s-%s-ec2-resource-logger", var.tags["environment"], var.tags["project"])
   role          = aws_iam_role.lambda_role.arn
-  handler       = "lambda_function.resource_logger_handler"
+  handler       = "logger.resource_logger_handler"
   runtime       = "python3.9"
   filename      = data.archive_file.lambda_function_zip.output_path
-  timeout       = var.lambda_timeout_logger
+  timeout       = var.ec2_lifecycle_config.lambda_timeout_ec2
 }
 
 resource "aws_cloudwatch_log_group" "resource_logger" {
@@ -53,10 +52,10 @@ resource "aws_cloudwatch_log_group" "resource_logger" {
   depends_on = [aws_lambda_function.resource_logger]
 }
 
-# Schedule EC2 lifecycle check
+# EventBridge rule for EC2 lifecycle check
 resource "aws_cloudwatch_event_rule" "ec2_lifecycle_schedule" {
   name                = format("%s-%s-ec2-lifecycle-schedule", var.tags["environment"], var.tags["project"])
-  schedule_expression = "rate(1 hour)"
+  schedule_expression = "cron(0 0 * * ? *)"  # Runs every day at 12 AM UTC
 }
 
 resource "aws_cloudwatch_event_target" "ec2_lifecycle_target" {
@@ -75,7 +74,7 @@ resource "aws_lambda_permission" "allow_cloudwatch" {
 
 # EventBridge rule for S3 bucket creation
 resource "aws_cloudwatch_event_rule" "s3_create" {
-  name = format("%s-%s-ec2-log-s3-creation", var.tags["environment"], var.tags["project"])
+  name = format("%s-%s-log-s3-creation", var.tags["environment"], var.tags["project"])
   event_pattern = jsonencode({
     source = ["aws.s3"],
     "detail-type" = ["AWS API Call via CloudTrail"],
@@ -87,7 +86,7 @@ resource "aws_cloudwatch_event_rule" "s3_create" {
 
 # EventBridge rule for SecretsManager secret creation
 resource "aws_cloudwatch_event_rule" "secretsmanager_create" {
-  name = format("%s-%s-ec2-log-secret-creation", var.tags["environment"], var.tags["project"])
+  name = format("%s-%s-log-secret-creation", var.tags["environment"], var.tags["project"])
   event_pattern = jsonencode({
     source = ["aws.secretsmanager"],
     "detail-type" = ["AWS API Call via CloudTrail"],
