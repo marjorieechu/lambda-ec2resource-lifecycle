@@ -15,7 +15,7 @@ cost_explorer = boto3.client("ce")
 COST_THRESHOLD = float(os.environ.get("COST_THRESHOLD", 5.0))
 MICRO_MAX_AGE_DAYS = int(os.environ.get("MICRO_MAX_AGE_DAYS", 4))
 DEFAULT_MAX_AGE_DAYS = int(os.environ.get("DEFAULT_MAX_AGE_DAYS", 1))
-REQUIRED_TAG_KEYS = set(k.strip() for k in os.environ.get("REQUIRED_TAG_KEYS", "Owner,Environment,Project").split(","))
+REQUIRED_TAG_KEYS = set(k.strip() for k in os.environ.get("REQUIRED_TAG_KEYS", "Owner,Environment").split(","))
 
 
 def get_instance_costs():
@@ -72,25 +72,11 @@ def ec2_lifecycle_handler(event, context):
             logger.info(f"Evaluating {instance_id}: type={instance_type}, age={age}")
 
             if age > allowed_age:
-                try:
-                    ec2.terminate_instances(InstanceIds=[instance_id])
-                    send_mattermost_alert(f"Terminated instance {instance_id} (cost=${instance_cost:.2f})")
-                    continue
-                except ClientError as e:
-                    logger.error(f"Termination failed: {e}")
+                send_mattermost_alert(f"Instance {instance_id} has exceeded its max age (age={age}).")
 
             missing = REQUIRED_TAG_KEYS - set(tags.keys())
             if missing:
-                try:
-                    ec2.stop_instances(InstanceIds=[instance_id])
-                    send_mattermost_alert(f"Stopped instance {instance_id} due to missing tags: {missing}")
-                    continue
-                except ClientError as e:
-                    logger.error(f"Stopping failed: {e}")
+                send_mattermost_alert(f"Instance {instance_id} is missing required tags: {missing}")
 
             if instance_cost > COST_THRESHOLD:
-                try:
-                    ec2.terminate_instances(InstanceIds=[instance_id])
-                    send_mattermost_alert(f"Terminated instance {instance_id} (cost=${instance_cost:.2f})")
-                except ClientError as e:
-                    logger.error(f"Failed to terminate high-cost instance {instance_id}: {e}")
+                send_mattermost_alert(f"Instance {instance_id} exceeded cost threshold: ${instance_cost:.2f}")
