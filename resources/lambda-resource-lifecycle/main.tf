@@ -1,5 +1,5 @@
 locals {
-  env = yamldecode(file("${path.module}/../../environments/webforx.yaml"))
+  env = yamldecode(file("${path.module}/../../environments/sentinel.yaml"))
 }
 
 terraform {
@@ -11,11 +11,11 @@ terraform {
     }
   }
   backend "s3" {
-    bucket         = "development-webforx-sandbox-tf-state"
-    key            = "webforx/lambda-resource-lifecycle/terraform.tfstate"
+    bucket         = "development-sentinel-sandbox-tf-state"
+    key            = "sentinel/lambda-resource-lifecycle/terraform.tfstate"
     region         = "us-east-1"
     encrypt        = true
-    dynamodb_table = "development-webforx-sandbox-tf-state-lock"
+    dynamodb_table = "development-sentinel-sandbox-tf-state-lock"
   }
 }
 
