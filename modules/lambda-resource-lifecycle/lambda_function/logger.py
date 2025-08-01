@@ -10,7 +10,7 @@ http = urllib3.PoolManager()
 MATTERMOST_WEBHOOK_URL = os.environ.get("MATTERMOST_WEBHOOK_URL")
 
 
-def send_mattermost_alert(message, title="EC2 Lifecycle Alert"):
+def send_slack_alert(message, title="EC2 Lifecycle Alert"):
     if not MATTERMOST_WEBHOOK_URL:
         logger.warning("Mattermost webhook not set.")
         return

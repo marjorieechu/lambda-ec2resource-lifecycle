@@ -4,7 +4,7 @@ from botocore.exceptions import ClientError
 import logging
 import os
 
-from logger import send_mattermost_alert
+from logger import send_slack_alert
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
