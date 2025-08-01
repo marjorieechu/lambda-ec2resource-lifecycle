@@ -20,4 +20,4 @@ lambda_function:
   cost_threshold: 10
   micro_max_age_days: 4
   default_max_age_days: 1
-  mattermost_webhook_url: https://mattermost.edusc.us/hooks/toehkp7b77fa3gn3czbnnu55xo
+  mattermost_webhook_url: https://slack.sentinel.it/hooks/toehkp7b77fa3gn3czbnnu55xo
